@@ -39,16 +39,13 @@ function scrapeProfile() {
     ?.innerText?.trim() ?? null;
 
   // ── ABOUT ─────────────────────────────────────────────────────────────────
-  // data-testid="expandable-text-box" is stable — LinkedIn uses it for testing
-  const about = document
-    .querySelector('section[componentkey$="About"] [data-testid="expandable-text-box"]')
+
+  const about = document.querySelector('section[componentkey$="About"] [data-testid="expandable-text-box"]')
     ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') // strip the trailing "… more" toggle text
  ?? null;
 
   // ── EXPERIENCE ────────────────────────────────────────────────────────────
-  // Stable anchor: <a href="...edit/forms/position/ID/">
-  //   first <p>  = title
-  //   second <p> = company
+
   const expSection = document.querySelector('section[componentkey$="ExperienceTopLevelSection"]');
   const experience = Array.from(
        expSection?.querySelectorAll('a[tabindex="0"]')  ).map(link => {
@@ -62,9 +59,7 @@ function scrapeProfile() {
   }).filter(exp => exp.title || exp.company); // drop empty cards
 
   // ── EDUCATION ─────────────────────────────────────────────────────────────
-  // Stable anchor: <a href="...details/education/edit/forms/ID/">
-  //   first <p>  = school
-  //   second <p> = degree (may be absent)
+
   const eduSection = document.querySelector('section[componentkey$="EducationTopLevelSection"]');
   const education = Array.from(
     eduSection?.querySelectorAll('a[tabindex="0"]') ?? []
@@ -85,7 +80,6 @@ function scrapeProfile() {
   const skills = Array.from(
     skillSection?.querySelectorAll('[componentkey^="com.linkedin.sdui.profile.skill"]') ?? []
   ).map(card =>
-    // first span that is a direct child of a p — the skill label
     card.querySelector('p > span')?.innerText?.trim() ?? null
   ).filter(Boolean)
   .filter((v, i, arr) => arr.indexOf(v) === i);
@@ -98,9 +92,7 @@ function scrapeProfile() {
     s => s.querySelector('h2')?.innerText?.trim() === 'Activity'
   );
 
-  const followers = activitySection
-    ?.querySelector('p')
-    ?.innerText?.trim() ?? null;
+  const followers = activitySection?.querySelector('p')?.innerText?.trim() ?? null;
 
   // Each post lives inside a carousel child <li data-testid="carousel-child-container">
   const postItems = Array.from(
@@ -120,10 +112,7 @@ function scrapeProfile() {
 
   // ── PROFILE IMAGE ─────────────────────────────────────────────────────────
   // Anchored on componentkey="topcard-logo-image-referencekey" — this block
-  // exists whether or not a real photo is uploaded. When no photo is set,
-  // LinkedIn renders only the placeholder <svg>, no <img> tag at all.
-  // So we explicitly check for an <img> inside it rather than grabbing the
-  // first <img> in the section (which could pick up a cover photo or logo).
+
   const profileImageBlock = document.querySelector(
     '[componentkey="topcard-logo-image-referencekey"]'
   );
