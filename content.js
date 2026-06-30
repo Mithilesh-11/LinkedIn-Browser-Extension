@@ -32,9 +32,11 @@ function scrapeProfile() {
     t.includes(',') && !t.includes(' at ') && !t.includes('·')
   ) ?? null;
   
-  const company = headline?.includes(' at ')
-    ? headline.split(' at ').slice(1).join(' at ').trim()
-    : null;
+const companyIcon = topSection?.querySelector('svg#company-accent-4');
+const company = companyIcon
+  ?.closest('div')
+  ?.querySelector('p span')
+  ?.innerText?.trim() ?? null;
 
   // ── ABOUT ─────────────────────────────────────────────────────────────────
   // data-testid="expandable-text-box" is stable — LinkedIn uses it for testing
