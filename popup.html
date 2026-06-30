@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <div class="head">
+    <div class="mark">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M4 6h16M4 12h10M4 18h13" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="18" r="2.4" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="head-text">
+      <h1>Profile Data Extractor</h1>
+      <p>Pull structured fields from the open profile</p>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="target-row">
+      <span class="dot" id="dot"></span>
+      <span id="targetLabel">Checking current tab…</span>
+    </div>
+
+    <button id="extractBtn">
+      <span class="spinner" id="spinner"></span>
+      <span id="btnLabel">Extract profile data</span>
+    </button>
+
+  </div>
+
+  <div class="foot">
+    <span>Saves as a local .txt file</span>
+  </div>
+
+<script src="popup.js"></script>
+</body>
+</html>
