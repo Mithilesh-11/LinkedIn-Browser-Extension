@@ -17,7 +17,6 @@ chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
 function scrapeProfile() {
 
   // ── NAME ──────────────────────────────────────────────────────────────────
-  // section[1] = profile card, always has h2 = person's name
   const topSection = Array.from(document.querySelectorAll('section'))[1];
   const name = topSection?.querySelector('h2')?.innerText?.trim() ?? null;
 
@@ -31,12 +30,13 @@ function scrapeProfile() {
   const location = topParas.find(t =>
     t.includes(',') && !t.includes(' at ') && !t.includes('·')
   ) ?? null;
-  
-const companyIcon = topSection?.querySelector('svg#company-accent-4');
-const company = companyIcon
-  ?.closest('div')
-  ?.querySelector('p span')
-  ?.innerText?.trim() ?? null;
+
+  // ── COMPANY ───────────────────
+  const companyIcon = topSection?.querySelector('svg#company-accent-4');
+  const company = companyIcon
+    ?.closest('div')
+    ?.querySelector('p span')
+    ?.innerText?.trim() ?? null;
 
   // ── ABOUT ─────────────────────────────────────────────────────────────────
   // data-testid="expandable-text-box" is stable — LinkedIn uses it for testing
@@ -50,14 +50,13 @@ const company = companyIcon
   //   second <p> = company
   const expSection = document.querySelector('section[componentkey$="ExperienceTopLevelSection"]');
   const experience = Array.from(
-    expSection?.querySelectorAll('a[href*="/edit/forms/position/"]') ?? []
-  ).map(link => {
+       expSection?.querySelectorAll('a[tabindex="0"]')  ).map(link => {
     const ps = Array.from(link.querySelectorAll('p')).map(p => p.innerText.trim()).filter(Boolean);
     return {
       title:   ps[0] ?? null,
       company: ps[1] ?? null,
     };
-  });
+  }).filter(exp => exp.title || exp.company); // drop empty cards
 
   // ── EDUCATION ─────────────────────────────────────────────────────────────
   // Stable anchor: <a href="...details/education/edit/forms/ID/">
@@ -65,7 +64,7 @@ const company = companyIcon
   //   second <p> = degree (may be absent)
   const eduSection = document.querySelector('section[componentkey$="EducationTopLevelSection"]');
   const education = Array.from(
-    eduSection?.querySelectorAll('a[href*="/details/education/edit/forms/"]') ?? []
+    eduSection?.querySelectorAll('a[tabindex="0"]') ?? []
   ).map(link => {
     const ps = Array.from(link.querySelectorAll('p'))
       .map(p => p.innerText.trim()).filter(Boolean);
@@ -73,7 +72,7 @@ const company = companyIcon
       school: ps[0] ?? null,
       degree: ps[1] ?? null,
     };
-  })
+  }).filter(edu => edu.school); // drop empty cards
 
   // ── SKILLS ────────────────────────────────────────────────────────────────
   // Stable anchor: componentkey="com.linkedin.sdui.profile.skill(...)"
@@ -85,14 +84,52 @@ const company = companyIcon
     // first span that is a direct child of a p — the skill label
     card.querySelector('p > span')?.innerText?.trim() ?? null
   ).filter(Boolean)
-  .filter((v, i, arr) => arr.indexOf(v) === i); // unique
+  .filter((v, i, arr) => arr.indexOf(v) === i);
+
+  // ── ACTIVITY (followers + recent posts) ──────────────────────────────────
+  // Section is identified by its h2 text "Activity" — same pattern as other
+  // sections but this one doesn't use a stable componentkey suffix, so we
+  // find it by heading text instead.
+  const activitySection = Array.from(document.querySelectorAll('section')).find(
+    s => s.querySelector('h2')?.innerText?.trim() === 'Activity'
+  );
+
+  const followers = activitySection
+    ?.querySelector('p')
+    ?.innerText?.trim() ?? null;
+
+  // Each post lives inside a carousel child <li data-testid="carousel-child-container">
+  const postItems = Array.from(
+    activitySection?.querySelectorAll('li[data-testid="carousel-child-container"]') ?? []
+  );
+
+  const posts = postItems.map(item => {
+    // post text — same stable testid pattern as About section
+    const text = item
+      .querySelector('[data-testid="expandable-text-box"]')
+      ?.innerText?.trim()
+      ?.replace(/…\s*more\s*$/i, '') // strip the trailing "… more" toggle text
+      .trim() ?? null;
+
+    return text;
+  }).filter(Boolean); // drop empty/broken cards
 
   // ── PROFILE IMAGE ─────────────────────────────────────────────────────────
-  const profileImage = topSection?.querySelector('img')?.src ?? null;
+  // Anchored on componentkey="topcard-logo-image-referencekey" — this block
+  // exists whether or not a real photo is uploaded. When no photo is set,
+  // LinkedIn renders only the placeholder <svg>, no <img> tag at all.
+  // So we explicitly check for an <img> inside it rather than grabbing the
+  // first <img> in the section (which could pick up a cover photo or logo).
+  const profileImageBlock = document.querySelector(
+    '[componentkey="topcard-logo-image-referencekey"]'
+  );
+  const profileImageEl = profileImageBlock?.querySelector('img') ?? null;
+  const profileImage = profileImageEl?.src ?? null;
 
   return {
     name, headline, company, location,
     about, experience, education, skills,
+    followers, posts,
     profileImage,
     url:        window.location.href,
     scraped_at: new Date().toISOString(),
@@ -126,6 +163,15 @@ function saveAsTxt(data) {
     ``,
     `SKILLS`,      `------`,
     data.skills.length ? data.skills.join(', ') : 'N/A',
+    ``,
+    `ACTIVITY`, `--------`,
+    `Followers: ${data.followers ?? 'N/A'}`,
+    ``,
+    `RECENT POSTS`, `------------`,
+    ...(data.posts.length
+      ? data.posts.map((text, i) => `${i + 1}. ${text}`)
+      : ['N/A']
+    ),
     ``,
     `PROFILE IMAGE`, `-------------`,
     data.profileImage ?? 'N/A',
