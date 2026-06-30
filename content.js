@@ -25,7 +25,7 @@ function scrapeProfile() {
     .map(p => p.innerText.trim())
     .filter(t => t && t !== name && t.length > 3);
 
-  const headline = topParas[0] ?? null;
+  const headline = topParas[1] ?? null;
 
   const location = topParas.find(t =>
     t.includes(',') && !t.includes(' at ') && !t.includes('·')
@@ -42,7 +42,8 @@ function scrapeProfile() {
   // data-testid="expandable-text-box" is stable — LinkedIn uses it for testing
   const about = document
     .querySelector('section[componentkey$="About"] [data-testid="expandable-text-box"]')
-    ?.innerText?.trim() ?? null;
+    ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') // strip the trailing "… more" toggle text
+ ?? null;
 
   // ── EXPERIENCE ────────────────────────────────────────────────────────────
   // Stable anchor: <a href="...edit/forms/position/ID/">
@@ -55,6 +56,8 @@ function scrapeProfile() {
     return {
       title:   ps[0] ?? null,
       company: ps[1] ?? null,
+      Dates:   ps[2] ?? null, 
+      Location: ps[3] ?? null,
     };
   }).filter(exp => exp.title || exp.company); // drop empty cards
 
@@ -71,6 +74,7 @@ function scrapeProfile() {
     return {
       school: ps[0] ?? null,
       degree: ps[1] ?? null,
+      Dates: ps[2] ?? null,
     };
   }).filter(edu => edu.school); // drop empty cards
 
@@ -151,13 +155,13 @@ function saveAsTxt(data) {
     `ABOUT`,       `-----`,     data.about    ?? 'N/A', ``,
     `EXPERIENCE`,  `----------`,
     ...(data.experience.length
-      ? data.experience.map((e, i) => `${i+1}. ${e.title ?? ''} @ ${e.company ?? ''}`)
+      ? data.experience.map((e, i) => `${i+1}. ${e.title ?? ''} @ ${e.company ?? ''} (${e.Dates ?? 'N/A'}, ${e.Location ?? 'N/A'})`)
       : ['N/A']
     ),
     ``,
     `EDUCATION`, `---------`,
     ...(data.education.length
-      ? data.education.map((e, i) => `${i+1}. ${e.school ?? ''} — ${e.degree ?? 'N/A'}`)
+      ? data.education.map((e, i) => `${i+1}. ${e.school ?? ''} — ${e.degree ?? 'N/A'} (${e.Dates ?? 'N/A'})`)
       : ['N/A']
     ),
     ``,
