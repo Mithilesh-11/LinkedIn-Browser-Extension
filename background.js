@@ -28,6 +28,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       `SKILLS`,      `------`,
       data.skills?.length ? data.skills.join(', ') : 'N/A',
       ``,
+      `PROJECTS`, `--------`,
+      ...(data.projects?.length
+        ? data.projects.map((p, i) => `${i+1}. ${p.name ?? ''} (${p.dates ?? 'N/A'})\n   ${p.description ?? ''}\n   Skills: ${p.skills?.join(', ') ?? 'N/A'}`)
+        : ['N/A']
+      ),
+      ``,
+      `CERTIFICATIONS`, `--------------`,
+      ...(data.certifications?.length
+        ? data.certifications.map((c, i) => `${i+1}. ${c.title ?? ''} — ${c.issuer ?? ''} (${c.issuedExpires ?? 'N/A'})\n   Credential ID: ${c.credentialId ?? 'N/A'}\n   Skills: ${c.skills ?? 'N/A'}`)
+        : ['N/A']
+      ),
+      ``,
+      `INTERESTS`, `---------`,
+      ...(data.interests?.length
+        ? data.interests.map((i, idx) => `${idx+1}. ${i.name ?? ''} (${i.followers ?? 'N/A'})`)
+        : ['N/A']
+      ),
+      ``,
       `ACTIVITY`, `--------`,
       `Followers: ${data.followers ?? 'N/A'}`,
       ``,

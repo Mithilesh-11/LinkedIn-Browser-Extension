@@ -118,10 +118,57 @@ function scrapeProfile() {
   const profileImageEl = profileImageBlock?.querySelector('img') ?? null;
   const profileImage = profileImageEl?.src ?? null;
 
+const projSection = document.querySelector('section[componentkey$="Projects"]');
+const projects = Array.from(
+  projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? []
+).map(item => {
+  const ps = Array.from(item.querySelectorAll('p'));
+  return {
+    name: ps[0]?.innerText?.trim() ?? null,
+    dates: ps[1]?.innerText?.trim() ?? null,
+    description: item.querySelector('[data-testid="expandable-text-box"]')
+      ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
+    skills: Array.from(item.querySelectorAll('a[href*="skill-associations-details"]'))
+      .map(a => a.innerText.trim()).filter(Boolean),
+  };
+}).filter(p => p.name);
+
+const certSection = document.querySelector('section[componentkey$="CertificationTopLevel"]');
+const certifications = Array.from(
+  certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? []
+).map(item => {
+  const ps = Array.from(item.querySelectorAll('p'))
+    .filter(p => !p.closest('a'))       // drop the "skills used" line, it's wrapped in <a>
+    .map(p => p.innerText.trim()).filter(Boolean);
+  return {
+    title: ps[0] ?? null,
+    issuer: ps[1] ?? null,
+    issuedExpires: ps[2] ?? null,
+    credentialId: ps[3] ?? null,
+    skills: item.querySelector('a[href*="skill-associations-details"]')?.innerText?.trim() ?? null,
+  };
+}).filter(c => c.title);
+
+
+const interestsSection = Array.from(document.querySelectorAll('section')).find(
+  s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests')
+);
+
+const interests = Array.from(
+  interestsSection?.querySelectorAll('a[href*="/company/"]') ?? []
+).map(a => {
+  const ps = Array.from(a.querySelectorAll('p'));
+  return {
+    name: a.querySelector('span[aria-hidden="true"]')?.innerText?.trim() ?? null,
+    followers: ps[ps.length - 1]?.innerText?.trim() ?? null,
+  };
+}).filter(i => i.name);
+
   return {
     name, headline, company, location,
     about, experience, education, skills,
     followers, posts,
+    projects, certifications, interests,
     profileImage,
     url:        window.location.href,
     scraped_at: new Date().toISOString(),
