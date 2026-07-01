@@ -48,12 +48,13 @@ function scrapeProfile() {
 
   const expSection = document.querySelector('section[componentkey$="ExperienceTopLevelSection"]');
   const experience = Array.from(
-       expSection?.querySelectorAll('a[tabindex="0"]')  ).map(link => {
+    expSection?.querySelectorAll('a[tabindex="0"]') ?? []
+  ).map(link => {
     const ps = Array.from(link.querySelectorAll('p')).map(p => p.innerText.trim()).filter(Boolean);
     return {
       title:   ps[0] ?? null,
       company: ps[1] ?? null,
-      Dates:   ps[2] ?? null, 
+      Dates:   ps[2] ?? null,
       Location: ps[3] ?? null,
     };
   }).filter(exp => exp.title || exp.company); // drop empty cards
