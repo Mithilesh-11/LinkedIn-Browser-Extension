@@ -4,13 +4,12 @@ chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
   if (msg.action === 'scrapeNow') {
     try {
       const data = scrapeProfile();
-      saveAsTxt(data);
       sendResponse({ status: 'done', data });
     } catch (err) {
       console.error('Scrape error:', err);
       sendResponse({ status: 'error', message: err.message });
     }
-    return true;
+    return false;
   }
 });
 
@@ -87,8 +86,7 @@ function scrapeProfile() {
 
   // ── ACTIVITY (followers + recent posts) ──────────────────────────────────
   // Section is identified by its h2 text "Activity" — same pattern as other
-  // sections but this one doesn't use a stable componentkey suffix, so we
-  // find it by heading text instead.
+  // sections but this one doesn't use a stable componentkey suffix, so we find it by heading text instead.
   const activitySection = Array.from(document.querySelectorAll('section')).find(
     s => s.querySelector('h2')?.innerText?.trim() === 'Activity'
   );
@@ -128,54 +126,4 @@ function scrapeProfile() {
     url:        window.location.href,
     scraped_at: new Date().toISOString(),
   };
-}
-
-// ─── save as .txt ─────────────────────────────────────────────────────────────
-function saveAsTxt(data) {
-  const lines = [
-    `LinkedIn Profile`,
-    `================`,
-    `Scraped: ${data.scraped_at}`,
-    `URL:     ${data.url}`,
-    ``,
-    `NAME`,        `----`,      data.name     ?? 'N/A', ``,
-    `HEADLINE`,    `--------`,  data.headline ?? 'N/A', ``,
-    `COMPANY`,     `-------`,   data.company  ?? 'N/A', ``,
-    `LOCATION`,    `--------`,  data.location ?? 'N/A', ``,
-    `ABOUT`,       `-----`,     data.about    ?? 'N/A', ``,
-    `EXPERIENCE`,  `----------`,
-    ...(data.experience.length
-      ? data.experience.map((e, i) => `${i+1}. ${e.title ?? ''} @ ${e.company ?? ''} (${e.Dates ?? 'N/A'}, ${e.Location ?? 'N/A'})`)
-      : ['N/A']
-    ),
-    ``,
-    `EDUCATION`, `---------`,
-    ...(data.education.length
-      ? data.education.map((e, i) => `${i+1}. ${e.school ?? ''} — ${e.degree ?? 'N/A'} (${e.Dates ?? 'N/A'})`)
-      : ['N/A']
-    ),
-    ``,
-    `SKILLS`,      `------`,
-    data.skills.length ? data.skills.join(', ') : 'N/A',
-    ``,
-    `ACTIVITY`, `--------`,
-    `Followers: ${data.followers ?? 'N/A'}`,
-    ``,
-    `RECENT POSTS`, `------------`,
-    ...(data.posts.length
-      ? data.posts.map((text, i) => `${i + 1}. ${text}`)
-      : ['N/A']
-    ),
-    ``,
-    `PROFILE IMAGE`, `-------------`,
-    data.profileImage ?? 'N/A',
-  ];
-
-  const blob    = new Blob([lines.join('\n')], { type: 'text/plain' });
-  const blobUrl = URL.createObjectURL(blob);
-  const filename = `linkedin_${(data.name ?? 'profile').replace(/\s+/g, '_')}_${Date.now()}.txt`;
-  const a = document.createElement('a');
-  a.href = blobUrl; a.download = filename; a.click();
-  URL.revokeObjectURL(blobUrl);
-  console.log('✅ Saved:', filename);
 }

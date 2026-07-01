@@ -34,18 +34,30 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLabel.textContent = 'Reading profile…';
 
     chrome.tabs.sendMessage(currentTab.id, { action: 'scrapeNow' }, (response) => {
-
-      spinner.classList.remove('show');
-      btn.disabled = false;
-
       if (chrome.runtime.lastError || !response || response.status !== 'done') {
+        spinner.classList.remove('show');
+        btn.disabled = false;
         btnLabel.textContent = 'Try again';
-        btnLabel.textContent = 'Extract profile data'; 
+        setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 1200);
         return;
       }
 
-      btnLabel.textContent = 'Saved ✓';
-      btnLabel.textContent = 'Extract profile data'; 
+      chrome.runtime.sendMessage(
+        { action: 'downloadProfileTxt', data: response.data },
+        (downloadResponse) => {
+          spinner.classList.remove('show');
+          btn.disabled = false;
+
+          if (chrome.runtime.lastError || !downloadResponse || downloadResponse.status !== 'done') {
+            btnLabel.textContent = 'Try again';
+            setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 1200);
+            return;
+          }
+
+          btnLabel.textContent = 'Saved ✓';
+          setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 1200);
+        }
+      );
     });
   });
 
