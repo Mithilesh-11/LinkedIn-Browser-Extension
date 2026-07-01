@@ -33,10 +33,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       ``,
       `RECENT POSTS`, `------------`,
       ...(data.posts?.length
-        ? data.posts.map((text, i) => `${i + 1}. ${text}`)
+        ? data.posts.flatMap((text, i) => [`${i + 1}. ${text}`, ``])
         : ['N/A']
       ),
-      ``,
       `PROFILE IMAGE`, `-------------`,
       data.profileImage ?? 'N/A',
     ];
