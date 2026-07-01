@@ -102,8 +102,9 @@ function scrapeProfile() {
     // post text — same stable testid pattern as About section
     const text = item
       .querySelector('[data-testid="expandable-text-box"]')
-      ?.innerText?.trim()
+      ?.innerText
       ?.replace(/…\s*more\s*$/i, '') // strip the trailing "… more" toggle text
+      .replace(/[^a-zA-Z0-9 ]/g, "")
       .trim() ?? null;
 
     return text;
@@ -129,7 +130,8 @@ const projects = Array.from(
     description: item.querySelector('[data-testid="expandable-text-box"]')
       ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
     skills: Array.from(item.querySelectorAll('a[href*="skill-associations-details"]'))
-      .map(a => a.innerText.trim()).filter(Boolean),
+      .map(a => a.innerText.trim())
+      .filter(Boolean),
   };
 }).filter(p => p.name);
 
@@ -138,8 +140,9 @@ const certifications = Array.from(
   certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? []
 ).map(item => {
   const ps = Array.from(item.querySelectorAll('p'))
-    .filter(p => !p.closest('a'))       // drop the "skills used" line, it's wrapped in <a>
-    .map(p => p.innerText.trim()).filter(Boolean);
+    .filter(p => !p.closest('a'))
+    .map(p => p.innerText.trim())
+    .filter(Boolean);
   return {
     title: ps[0] ?? null,
     issuer: ps[1] ?? null,

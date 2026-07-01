@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       chrome.runtime.sendMessage(
-        { action: 'downloadProfileTxt', data: response.data },
+        { action: 'downloadProfileJson', data: response.data },
         (downloadResponse) => {
           spinner.classList.remove('show');
           btn.disabled = false;
