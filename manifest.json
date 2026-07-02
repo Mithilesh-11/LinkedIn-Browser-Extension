@@ -3,7 +3,7 @@
   "name": "LinkedIn Scraper",
   "version": "1.0",
   "permissions": ["activeTab", "tabs", "downloads"],
-  "host_permissions": ["https://www.linkedin.com/*"],
+  "host_permissions": ["https://www.linkedin.com/*", "http://localhost:3000/*"],
   "background": {
     "service_worker": "background.js"
   },
