@@ -66,8 +66,8 @@ function scrapeProfile() {
     return {
       title:   ps[0] ?? null,
       company: ps[1] ?? null,
-      Dates:   ps[2] ?? null,
-      Location: ps[3] ?? null,
+      debuggerates:   ps[2] ?? null,
+      location: ps[3] ?? null,
     };
   }).filter(exp => exp.title || exp.company); // drop empty cards
 
@@ -177,6 +177,6 @@ function scrapeProfile() {
     projects, certifications, interests,
     profileImage,
     url:        window.location.href,
-    scraped_at: new Date().toISOString(),
+    scrapedAt: new Date().toISOString(),
   };
 }

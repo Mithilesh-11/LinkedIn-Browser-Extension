@@ -22,7 +22,7 @@ function sendToPostgreSQL(candidate, callback) {
 function saveCandidate(candidate, callback) {
   const normalized = {
     ...candidate,
-    url: candidate?.url || candidate?.linkedin_url || null,
+    url: candidate?.url|| null,
   };
 
   sendToPostgreSQL(normalized, (dbResult) => {
