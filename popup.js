@@ -84,7 +84,21 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`${BACKEND_URL}?limit=5`)
       .then((response) => response.json())
       .then((data) => {
-        const candidates = data.candidates || [];
+        let candidates = data.candidates || [];
+        
+        // Filter out duplicates based on URL
+        const seenUrls = new Set();
+        candidates = candidates.filter((candidate) => {
+          const url = candidate?.url || null;
+          if (!url) return true; // Keep candidates without URL
+          
+          if (seenUrls.has(url)) {
+            return false; // Skip duplicate
+          }
+          seenUrls.add(url);
+          return true; // Keep first occurrence
+        });
+        
         renderHistory(candidates);
       })
       .catch((error) => {

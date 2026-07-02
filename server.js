@@ -18,28 +18,16 @@ app.post('/api/candidates', async (req, res) => {
     const data = req.body;
 
     const query = `
-      INSERT INTO candidates (
-        linkedin_url,
-        name,
-        headline,
-        company,
-        location,
-        about,
-        experience,
-        education,
-        skills,
-        followers,
-        posts,
-        projects,
-        certifications,
-        interests,
-        profile_image,
-        scraped_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
-      )
-      ON CONFLICT (linkedin_url) 
-      DO UPDATE SET
+
+       INSERT INTO candidates 
+       ( linkedin_url, name,headline,company, location, about,experience,education,skills, followers, posts, projects,
+       certifications, interests, profile_image, scraped_at) 
+
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+
+       ON CONFLICT (linkedin_url) 
+
+       DO UPDATE SET
         name = EXCLUDED.name,
         headline = EXCLUDED.headline,
         company = EXCLUDED.company,
@@ -60,7 +48,7 @@ app.post('/api/candidates', async (req, res) => {
     `;
 
     const values = [
-      data.url || data.linkedin_url,
+      data.url,
       data.name,
       data.headline,
       data.company,
