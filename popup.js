@@ -38,13 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('show');
         btn.disabled = false;
         btnLabel.textContent = 'Try again';
-        setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 1200);
+        setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 2000);
         return;
       }
 
-      chrome.runtime.sendMessage(
-        { action: 'downloadProfileJson', data: response.data },
-        (downloadResponse) => {
+      chrome.runtime.sendMessage({ action: 'downloadProfileJson', data: response.data }, (downloadResponse) => {
           spinner.classList.remove('show');
           btn.disabled = false;
 

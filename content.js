@@ -24,7 +24,21 @@ function scrapeProfile() {
     .map(p => p.innerText.trim())
     .filter(t => t && t !== name && t.length > 3);
 
-  const headline = topParas[1] ?? null;
+  // Pronoun line: short, matches a known closed set
+  const pronounSet = ['He/Him', 'She/Her', 'They/Them'];
+  const pronouns = topParas.find(t => pronounSet.includes(t)) ?? null;
+  // Location: has a comma, no " · " separator (company/school lines use " · ")
+  const locations = topParas.find(t => t.includes(',') && !t.includes(' · ')) ?? null;
+  // Company/school summary: contains " · " joining two org names
+  const orgSummary = topParas.find(t => t.includes(' · ') && t !== locations) ?? null;
+
+  // Headline: whatever's left after removing pronoun, location, orgSummary, and any leftover verification text
+  const headline = topParas.find(t =>
+    t !== pronouns &&
+    t !== locations &&
+    t !== orgSummary &&
+    !t.toLowerCase().includes('verify')
+  ) ?? null;
 
   const location = topParas.find(t =>
     t.includes(',') && !t.includes(' at ') && !t.includes('·')
@@ -46,9 +60,8 @@ function scrapeProfile() {
   // ── EXPERIENCE ────────────────────────────────────────────────────────────
 
   const expSection = document.querySelector('section[componentkey$="ExperienceTopLevelSection"]');
-  const experience = Array.from(
-    expSection?.querySelectorAll('a[tabindex="0"]') ?? []
-  ).map(link => {
+  const experience = Array.from(expSection?.querySelectorAll('a[tabindex="0"]') ?? [])
+  .map(link => {
     const ps = Array.from(link.querySelectorAll('p')).map(p => p.innerText.trim()).filter(Boolean);
     return {
       title:   ps[0] ?? null,
@@ -61,15 +74,17 @@ function scrapeProfile() {
   // ── EDUCATION ─────────────────────────────────────────────────────────────
 
   const eduSection = document.querySelector('section[componentkey$="EducationTopLevelSection"]');
-  const education = Array.from(
-    eduSection?.querySelectorAll('a[tabindex="0"]') ?? []
-  ).map(link => {
-    const ps = Array.from(link.querySelectorAll('p'))
-      .map(p => p.innerText.trim()).filter(Boolean);
+  const education = Array.from(eduSection?.querySelectorAll('a[tabindex="0"]') ?? [])
+  .map(link => {
+    const ps = Array.from(link.querySelectorAll('p')).map(p => p.innerText.trim()).filter(Boolean);
+     // Split the date string by hyphen (handles standard, en-dash, and em-dash)
+    const dateParts = ps[2] ? ps[2].split(/[-–—]/) : [];
+    
     return {
       school: ps[0] ?? null,
       degree: ps[1] ?? null,
-      Dates: ps[2] ?? null,
+      startDate: dateParts[0]?.trim() ?? null,
+      endDate: dateParts[1]?.trim() ?? null,
     };
   }).filter(edu => edu.school); // drop empty cards
 
@@ -77,26 +92,21 @@ function scrapeProfile() {
   // Stable anchor: componentkey="com.linkedin.sdui.profile.skill(...)"
   // Skill name = first <p> > <span> inside each skill card
   const skillSection = document.querySelector('section[componentkey$="Skills"]');
-  const skills = Array.from(
-    skillSection?.querySelectorAll('[componentkey^="com.linkedin.sdui.profile.skill"]') ?? []
-  ).map(card =>
-    card.querySelector('p > span')?.innerText?.trim() ?? null
-  ).filter(Boolean)
+  const skills = Array.from(skillSection?.querySelectorAll('[componentkey^="com.linkedin.sdui.profile.skill"]') ?? [])
+  .map(card =>card.querySelector('p > span')?.innerText?.trim() ?? null)
+  .filter(Boolean)
   .filter((v, i, arr) => arr.indexOf(v) === i);
 
   // ── ACTIVITY (followers + recent posts) ──────────────────────────────────
   // Section is identified by its h2 text "Activity" — same pattern as other
   // sections but this one doesn't use a stable componentkey suffix, so we find it by heading text instead.
-  const activitySection = Array.from(document.querySelectorAll('section')).find(
-    s => s.querySelector('h2')?.innerText?.trim() === 'Activity'
-  );
+  const activitySection = Array.from(document.querySelectorAll('section'))
+   .find(s => s.querySelector('h2')?.innerText?.trim() === 'Activity');
 
   const followers = activitySection?.querySelector('p')?.innerText?.trim() ?? null;
 
   // Each post lives inside a carousel child <li data-testid="carousel-child-container">
-  const postItems = Array.from(
-    activitySection?.querySelectorAll('li[data-testid="carousel-child-container"]') ?? []
-  );
+  const postItems = Array.from(activitySection?.querySelectorAll('li[data-testid="carousel-child-container"]') ?? []);
 
   const posts = postItems.map(item => {
     // post text — same stable testid pattern as About section
@@ -112,60 +122,53 @@ function scrapeProfile() {
 
   // ── PROFILE IMAGE ─────────────────────────────────────────────────────────
   // Anchored on componentkey="topcard-logo-image-referencekey" — this block
-
-  const profileImageBlock = document.querySelector(
-    '[componentkey="topcard-logo-image-referencekey"]'
-  );
-  const profileImageEl = profileImageBlock?.querySelector('img') ?? null;
+  const profileImageEl = document.querySelector('[componentkey="topcard-logo-image-referencekey"] img');
   const profileImage = profileImageEl?.src ?? null;
 
-const projSection = document.querySelector('section[componentkey$="Projects"]');
-const projects = Array.from(
-  projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? []
-).map(item => {
-  const ps = Array.from(item.querySelectorAll('p'));
-  return {
-    name: ps[0]?.innerText?.trim() ?? null,
-    dates: ps[1]?.innerText?.trim() ?? null,
-    description: item.querySelector('[data-testid="expandable-text-box"]')
+
+  const projSection = document.querySelector('section[componentkey$="Projects"]');
+  const projects = Array.from(projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
+  .map(item => {
+    const ps = Array.from(item.querySelectorAll('p'));
+    return {
+      name: ps[0]?.innerText?.trim() ?? null,
+      dates: ps[1]?.innerText?.trim() ?? null,
+      description: item.querySelector('[data-testid="expandable-text-box"]')
       ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
-    skills: Array.from(item.querySelectorAll('a[href*="skill-associations-details"]'))
-      .map(a => a.innerText.trim())
-      .filter(Boolean),
-  };
-}).filter(p => p.name);
+      skills: Array.from(item.querySelectorAll('a[href*="skill-associations-details"]'))
+        .map(a => a.innerText.trim())
+        .filter(Boolean),
+    };
+  }).filter(p => p.name);
 
-const certSection = document.querySelector('section[componentkey$="CertificationTopLevel"]');
-const certifications = Array.from(
-  certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? []
-).map(item => {
-  const ps = Array.from(item.querySelectorAll('p'))
-    .filter(p => !p.closest('a'))
-    .map(p => p.innerText.trim())
-    .filter(Boolean);
-  return {
-    title: ps[0] ?? null,
-    issuer: ps[1] ?? null,
-    issuedExpires: ps[2] ?? null,
-    credentialId: ps[3] ?? null,
-    skills: item.querySelector('a[href*="skill-associations-details"]')?.innerText?.trim() ?? null,
-  };
-}).filter(c => c.title);
+  const certSection = document.querySelector('section[componentkey$="CertificationTopLevel"]');
+  const certifications = Array.from(certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
+  .map(item => {
+    const ps = Array.from(item.querySelectorAll('p'))
+      .filter(p => !p.closest('a'))
+      .map(p => p.innerText.trim())
+      .filter(Boolean);
+    return {
+      title: ps[0] ?? null,
+      issuer: ps[1] ?? null,
+      issuedExpires: ps[2] ?? null,
+      credentialId: ps[3] ?? null,
+      skills: item.querySelector('a[href*="skill-associations-details"]')?.innerText?.trim() ?? null,
+    };
+  }).filter(c => c.title);
 
 
-const interestsSection = Array.from(document.querySelectorAll('section')).find(
-  s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests')
-);
+  const interestsSection = Array.from(document.querySelectorAll('section'))
+   .find(s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests'));
 
-const interests = Array.from(
-  interestsSection?.querySelectorAll('a[href*="/company/"]') ?? []
-).map(a => {
-  const ps = Array.from(a.querySelectorAll('p'));
-  return {
-    name: a.querySelector('span[aria-hidden="true"]')?.innerText?.trim() ?? null,
-    followers: ps[ps.length - 1]?.innerText?.trim() ?? null,
-  };
-}).filter(i => i.name);
+  const interests = Array.from(interestsSection?.querySelectorAll('a[href*="/company/"]') ?? [])
+  .map(a => {
+    const ps = Array.from(a.querySelectorAll('p'));
+    return {
+      name: a.querySelector('span[aria-hidden="true"]')?.innerText?.trim() ?? null,
+      followers: ps[ps.length - 1]?.innerText?.trim() ?? null,
+    };
+  }).filter(i => i.name);
 
   return {
     name, headline, company, location,
