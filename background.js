@@ -45,7 +45,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const data = message.data;
     saveCandidate(data, (saveResult) => {
       const filename = `linkedin_${(data?.name ?? 'profile').replace(/\s+/g, '_')}_${Date.now()}.json`;
-      const content = JSON.stringify(data, null, 2);
+      const content = JSON.stringify(
+        data,
+        (key, value) => {
+          if (value === null || value === undefined) return undefined;
+          if (Array.isArray(value) && value.length === 0) return undefined;
+          return value;
+        },
+        2
+      );
       const url = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
 
       chrome.downloads.download({ url, filename, saveAs: false }, (downloadId) => {

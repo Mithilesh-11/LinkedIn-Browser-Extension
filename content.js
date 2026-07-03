@@ -203,6 +203,16 @@ function scrapeProfile() {
     return match ? parseInt(match[0], 10) : null;
   };
 
+  const normalizeInterestName = (value) => {
+    if (value == null) return null;
+    const lines = String(value)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length === 0) return null;
+    return lines[0].replace(/\s+/g, ' ').trim();
+  };
+
 const interestsSection = Array.from(document.querySelectorAll('section'))
   .find(s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests'));
 
@@ -210,7 +220,7 @@ const interests = Array.from(interestsSection?.querySelectorAll('a[tabindex="0"]
   .map(a => {
     const ps = Array.from(a.querySelectorAll('p'));
     return {
-      name: ps[0]?.innerText?.trim() ?? null,
+      name: normalizeInterestName(ps[0]?.innerText?.trim() ?? null),
       followers: normalizeInterestFollowers(ps[ps.length - 1]?.innerText?.trim()),
     };
   }).filter(i => i.name);
