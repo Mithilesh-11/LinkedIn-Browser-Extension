@@ -30,7 +30,7 @@ app.post('/api/candidates', async (req, res) => {
       JSON.stringify(data.experience || []),
       JSON.stringify(data.education || []),
       JSON.stringify(data.skills || []),
-      data.followers ?? 0, // Fallback to 0 for integer column
+      data.followers ?? 0,
       JSON.stringify(data.posts || []),
       JSON.stringify(data.projects || []),
       JSON.stringify(data.certifications || []),

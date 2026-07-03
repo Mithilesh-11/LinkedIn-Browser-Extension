@@ -125,7 +125,14 @@ function scrapeProfile() {
   const activitySection = Array.from(document.querySelectorAll('section'))
    .find(s => s.querySelector('h2')?.innerText?.trim() === 'Activity');
 
-  const followers = activitySection?.querySelector('p')?.innerText?.trim() ?? null;
+  const normalizeFollowers = (value) => {
+    if (value == null) return null;
+    const match = String(value).replace(/,/g, '').match(/\d+/);
+    return match ? parseInt(match[0], 10) : null;
+  };
+
+  const followersText = activitySection?.querySelector('p')?.innerText?.trim() ?? null;
+  const followers = normalizeFollowers(followersText);
 
   // Each post lives inside a carousel child <li data-testid="carousel-child-container">
   const postItems = Array.from(activitySection?.querySelectorAll('li[data-testid="carousel-child-container"]') ?? []);
@@ -190,6 +197,12 @@ function scrapeProfile() {
   }).filter(c => c.title);
 
 
+  const normalizeInterestFollowers = (value) => {
+    if (value == null) return null;
+    const match = String(value).replace(/,/g, '').match(/\d+/);
+    return match ? parseInt(match[0], 10) : null;
+  };
+
   const interestsSection = Array.from(document.querySelectorAll('section'))
    .find(s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests'));
 
@@ -198,7 +211,7 @@ function scrapeProfile() {
     const ps = Array.from(a.querySelectorAll('p'));
     return {
       name: a.querySelector('span[aria-hidden="true"]')?.innerText?.trim() ?? null,
-      followers: ps[ps.length - 1]?.innerText?.trim() ?? null,
+      followers: normalizeInterestFollowers(ps[ps.length - 1]?.innerText?.trim()),
     };
   }).filter(i => i.name);
 
