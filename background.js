@@ -7,9 +7,16 @@ function sendToPostgreSQL(candidate, callback) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(candidate),
+    mode: 'cors',
   })
-    .then((response) => response.json())
-    .then((data) => {
+    .then(async (response) => {
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(data?.message || `Server returned ${response.status}`);
+      }
+
       console.log('Sent to PostgreSQL:', data);
       if (callback) callback({ status: 'done', dbData: data });
     })

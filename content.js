@@ -62,14 +62,36 @@ function scrapeProfile() {
   const expSection = document.querySelector('section[componentkey$="ExperienceTopLevelSection"]');
   const experience = Array.from(expSection?.querySelectorAll('a[tabindex="0"]') ?? [])
   .map(link => {
+    
     const ps = Array.from(link.querySelectorAll('p')).map(p => p.innerText.trim()).filter(Boolean);
+    
+    let dateRangePart = typeof ps[2] === 'string' ? ps[2] : '';
+    let duration = null;
+
+    // 1. Split by dot to extract duration
+    if (dateRangePart.includes('·')) {
+      const primaryParts = dateRangePart.split('·');
+      dateRangePart = primaryParts[0] ?? '';
+      duration = primaryParts[1]?.trim() ?? null;
+    }
+
+    // 2. Split by hyphen to separate dates
+    const dateParts = dateRangePart
+      .split('-')
+      .map(part => part.trim())
+      .filter(Boolean);
+    const startDate = dateParts[0] ?? null;
+    const endDate = dateParts[1] ?? null; 
+
     return {
       title:   ps[0] ?? null,
       company: ps[1] ?? null,
-      debuggerates:   ps[2] ?? null,
       location: ps[3] ?? null,
+      endDate : endDate ?? null,
+      startDate: startDate ?? null,
+      duration: duration ?? null
     };
-  }).filter(exp => exp.title || exp.company); // drop empty cards
+  }).filter(exp => exp.title && exp.company); // drop empty cards
 
   // ── EDUCATION ─────────────────────────────────────────────────────────────
 
@@ -148,11 +170,21 @@ function scrapeProfile() {
       .filter(p => !p.closest('a'))
       .map(p => p.innerText.trim())
       .filter(Boolean);
+
+    const parts = ps[2] ? ps[2].split(" · ") : null;
+    // 2. Clean up the "Issued " string from the first part
+    const startDate = parts && parts[0] ? parts[0].replace("Issued ", "").trim() : null;
+    // 3. Clean up the "Expires " string from the second part (if it exists)
+    const endDate = parts && parts[1] ? parts[1].replace("Expires ", "").trim() : null;
+
+    const actualId = ps[3] ? ps[3].replace("Credential ID ", "").trim() : null;
+
     return {
       title: ps[0] ?? null,
       issuer: ps[1] ?? null,
-      issuedExpires: ps[2] ?? null,
-      credentialId: ps[3] ?? null,
+      startDate: startDate,
+      endDate: endDate,
+      credentialId: actualId,
       skills: item.querySelector('a[href*="skill-associations-details"]')?.innerText?.trim() ?? null,
     };
   }).filter(c => c.title);
@@ -176,7 +208,7 @@ function scrapeProfile() {
     followers, posts,
     projects, certifications, interests,
     profileImage,
-    url:        window.location.href,
+    url: window.location.href,
     scrapedAt: new Date().toISOString(),
   };
 }

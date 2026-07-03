@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const followers = candidate?.followers || 'N/A';
       const url = candidate?.url || null;
       const skills = Array.isArray(candidate?.skills) ? candidate.skills : [];
-      const dateStr = candidate?.created_at || candidate?.saved_at || null;
+      const dateStr = candidate?.createdAt || null;
       const date = dateStr ? new Date(dateStr).toLocaleDateString() : 'Recently';
 
       const skillsHtml = skills.length > 0

@@ -12,22 +12,45 @@ const pool = new Pool({
   database: 'Linkedin',
 });
 
-// POST endpoint to save candidate
 app.post('/api/candidates', async (req, res) => {
   try {
     const data = req.body;
 
-    const query = `
+    if (!data.url) {
+      return res.status(400).json({ status: 'error', message: 'URL is required' });
+    }
 
-       INSERT INTO candidates 
-       ( url, name,headline,company, location, about,experience,education,skills, followers, posts, projects,
-       certifications, interests, profile_image, scraped_at) 
+    const values = [
+      data.url,
+      data.name ?? null,
+      data.headline ?? null,
+      data.company ?? null,
+      data.location ?? null,
+      data.about ?? null,
+      JSON.stringify(data.experience || []),
+      JSON.stringify(data.education || []),
+      JSON.stringify(data.skills || []),
+      data.followers ?? 0, // Fallback to 0 for integer column
+      JSON.stringify(data.posts || []),
+      JSON.stringify(data.projects || []),
+      JSON.stringify(data.certifications || []),
+      JSON.stringify(data.interests || []),
+      data.profileImage ?? null,
+      data.scrapedAt ?? null,
+    ];
 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-
-       ON CONFLICT (url) 
-
-       DO UPDATE SET
+    const upsertQuery = `
+      INSERT INTO candidates (
+        url, name, headline, company, location, about, 
+        experience, education, skills, followers, posts, 
+        projects, certifications, interests, "profileImage", "scrapedAt",
+        "createdAt", "updatedAt"
+      ) 
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 
+        NOW(), NOW()
+      )
+      ON CONFLICT (url) DO UPDATE SET
         name = EXCLUDED.name,
         headline = EXCLUDED.headline,
         company = EXCLUDED.company,
@@ -41,44 +64,27 @@ app.post('/api/candidates', async (req, res) => {
         projects = EXCLUDED.projects,
         certifications = EXCLUDED.certifications,
         interests = EXCLUDED.interests,
-        profile_image = EXCLUDED.profile_image,
-        scraped_at = EXCLUDED.scraped_at,
-        updated_at = NOW()
+        "profileImage" = EXCLUDED."profileImage",
+        "scrapedAt" = EXCLUDED."scrapedAt",
+        "updatedAt" = NOW()
       RETURNING *;
     `;
 
-    const values = [
-      data.url,
-      data.name,
-      data.headline,
-      data.company,
-      data.location,
-      data.about,
-      JSON.stringify(data.experience || []),
-      JSON.stringify(data.education || []),
-      JSON.stringify(data.skills || []),
-      data.followers,
-      JSON.stringify(data.posts || []),
-      JSON.stringify(data.projects || []),
-      JSON.stringify(data.certifications || []),
-      JSON.stringify(data.interests || []),
-      data.profileImage || data.profile_image,
-      data.scraped_at,
-    ];
+    const result = await pool.query(upsertQuery, values);
+    return res.json({ status: 'done', data: result.rows[0] });
 
-    const result = await pool.query(query, values);
-    res.json({ status: 'done', data: result.rows[0] });
   } catch (error) {
     console.error('Database error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 });
+
 
 // GET endpoint to fetch all candidates
 app.get('/api/candidates', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM candidates ORDER BY created_at DESC LIMIT 100'
+      'SELECT * FROM candidates ORDER BY "createdAt" DESC LIMIT 100'
     );
     res.json({ status: 'done', candidates: result.rows });
   } catch (error) {
@@ -86,6 +92,7 @@ app.get('/api/candidates', async (req, res) => {
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
+
 
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
