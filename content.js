@@ -173,10 +173,13 @@ function scrapeProfile() {
   const certSection = document.querySelector('section[componentkey$="CertificationTopLevel"]');
   const certifications = Array.from(certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
   .map(item => {
-    const ps = Array.from(item.querySelectorAll('p'))
-      .filter(p => !p.closest('a'))
+    const paragraphNodes = Array.from(item.querySelectorAll('p')).filter(p => !p.closest('a'));
+    const ps = paragraphNodes
       .map(p => p.innerText.trim())
       .filter(Boolean);
+
+    const dateParagraph = paragraphNodes.find(p => /Issued|Expires/i.test(p.innerText.trim()));
+    const credentialParagraph = paragraphNodes.find(p => /Credential ID/i.test(p.innerText.trim()));
 
     const parts = ps[2] ? ps[2].split(" · ") : null;
     // 2. Clean up the "Issued " string from the first part
@@ -184,7 +187,9 @@ function scrapeProfile() {
     // 3. Clean up the "Expires " string from the second part (if it exists)
     const endDate = parts && parts[1] ? parts[1].replace("Expires ", "").trim() : null;
 
-    const actualId = ps[3] ? ps[3].replace("Credential ID ", "").trim() : null;
+    const actualId = credentialParagraph
+      ? credentialParagraph.innerText.replace(/Credential ID\s*/i, '').trim()
+      : null;
 
     return {
       title: ps[0] ?? null,
