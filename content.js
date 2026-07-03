@@ -203,14 +203,14 @@ function scrapeProfile() {
     return match ? parseInt(match[0], 10) : null;
   };
 
-  const interestsSection = Array.from(document.querySelectorAll('section'))
-   .find(s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests'));
+const interestsSection = Array.from(document.querySelectorAll('section'))
+  .find(s => s.querySelector('h2')?.innerText?.trim().startsWith('Interests'));
 
-  const interests = Array.from(interestsSection?.querySelectorAll('a[href*="/company/"]') ?? [])
+const interests = Array.from(interestsSection?.querySelectorAll('a[tabindex="0"]') ?? [])
   .map(a => {
     const ps = Array.from(a.querySelectorAll('p'));
     return {
-      name: a.querySelector('span[aria-hidden="true"]')?.innerText?.trim() ?? null,
+      name: ps[0]?.innerText?.trim() ?? null,
       followers: normalizeInterestFollowers(ps[ps.length - 1]?.innerText?.trim()),
     };
   }).filter(i => i.name);
