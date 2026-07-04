@@ -155,7 +155,7 @@ function scrapeProfile() {
   const profileImage = profileImageEl?.src ?? null;
 
 
-  
+
 
  const projSection = document.querySelector('section[componentkey$="Projects"]');
  const projects = Array.from(projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
@@ -260,11 +260,36 @@ const interests = Array.from(interestsSection?.querySelectorAll('a[tabindex="0"]
     };
   }).filter(i => i.name);
 
+
+
+
+  const recSection = document.querySelector('section[componentkey$="RecommendationsTopLevel"]');
+
+const recommendations = Array.from(
+  recSection?.querySelectorAll('a[href*="linkedin.com/in/"]') ?? []
+).map(link => {
+  const container = link.closest('div[componentkey]') ?? link;
+  const ps = Array.from(container.querySelectorAll('p'));
+
+  const nameSpan = ps[0]?.querySelector('span');
+  const name = nameSpan?.childNodes[0]?.textContent?.trim() ?? null;
+
+  return {
+    name,
+    headline: ps[2]?.innerText?.trim() ?? null,
+    dateAndRelationship: ps[3]?.innerText?.trim() ?? null,
+    text: container.querySelector('[data-testid="expandable-text-box"]')
+      ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
+  };
+}).filter(r => r.name);
+
+
   return {
     name, headline, company, location,
     about, experience, education, skills,
     followers, posts,
     projects, certifications, interests,
+    recommendations,
     profileImage,
     url: window.location.href,
     scrapedAt: new Date().toISOString(),
