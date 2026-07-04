@@ -155,20 +155,50 @@ function scrapeProfile() {
   const profileImage = profileImageEl?.src ?? null;
 
 
-  const projSection = document.querySelector('section[componentkey$="Projects"]');
-  const projects = Array.from(projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
+  
+
+ const projSection = document.querySelector('section[componentkey$="Projects"]');
+ const projects = Array.from(projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
   .map(item => {
     const ps = Array.from(item.querySelectorAll('p'));
+
+    let startDate = null;
+    let endDate = null;
+    let association = null;
+
+    ps.forEach(p => {
+      const text = p.innerText?.trim() ?? '';
+
+      // Association line
+      const assocMatch = text.match(/^Associated with\s*(.*)/i);
+      if (assocMatch) {
+        association = assocMatch[1].trim() || null;
+        return;
+      }
+
+      // Date range line (contains a month/year-like pattern plus a dash)
+      if (/[-–—]/.test(text) && /\d{4}|present/i.test(text)) {
+        const parts = text.split(/[-–—]/).map(s => s.trim()).filter(Boolean);
+        startDate = parts[0] ?? null;
+        endDate = parts[1] ?? null;
+      }
+    });
+
     return {
       name: ps[0]?.innerText?.trim() ?? null,
-      dates: ps[1]?.innerText?.trim() ?? null,
+      startDate,
+      endDate,
+      association,
       description: item.querySelector('[data-testid="expandable-text-box"]')
-      ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
+        ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
       skills: Array.from(item.querySelectorAll('a[href*="skill-associations-details"]'))
         .map(a => a.innerText.trim())
         .filter(Boolean),
     };
   }).filter(p => p.name);
+
+
+
 
   const certSection = document.querySelector('section[componentkey$="CertificationTopLevel"]');
   const certifications = Array.from(certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
