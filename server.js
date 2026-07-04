@@ -35,6 +35,7 @@ app.post('/api/candidates', async (req, res) => {
       JSON.stringify(data.projects || []),
       JSON.stringify(data.certifications || []),
       JSON.stringify(data.interests || []),
+      JSON.stringify(data.recommendations || []),
       data.profileImage ?? null,
       data.scrapedAt ?? null,
     ];
@@ -43,11 +44,11 @@ app.post('/api/candidates', async (req, res) => {
       INSERT INTO candidates (
         url, name, headline, company, location, about, 
         experience, education, skills, followers, posts, 
-        projects, certifications, interests, "profileImage", "scrapedAt",
+        projects, certifications, interests, recommendations, "profileImage", "scrapedAt",
         "createdAt", "updatedAt"
       ) 
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 
         NOW(), NOW()
       )
       ON CONFLICT (url) DO UPDATE SET
@@ -64,6 +65,7 @@ app.post('/api/candidates', async (req, res) => {
         projects = EXCLUDED.projects,
         certifications = EXCLUDED.certifications,
         interests = EXCLUDED.interests,
+        recommendations = EXCLUDED.recommendations,
         "profileImage" = EXCLUDED."profileImage",
         "scrapedAt" = EXCLUDED."scrapedAt",
         "updatedAt" = NOW()
