@@ -1,83 +1,115 @@
 const BACKEND_URL = 'http://localhost:3000/api/candidates';
 
-function sendToPostgreSQL(candidate, callback) {
-  fetch(BACKEND_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(candidate),
-    mode: 'cors',
-  })
-    .then(async (response) => {
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
-
-      if (!response.ok) {
-        throw new Error(data?.message || `Server returned ${response.status}`);
-      }
-
-      console.log('Sent to PostgreSQL:', data);
-      if (callback) callback({ status: 'done', dbData: data });
-    })
-    .catch((error) => {
-      console.error('Failed to send to PostgreSQL:', error);
-      if (callback) callback({ status: 'error', error: error.message });
-    });
-}
-
-function saveCandidate(candidate, callback) {
-  const normalized = {
-    ...candidate,
-    url: candidate?.url|| null,
-  };
-
-  sendToPostgreSQL(normalized, (dbResult) => {
-    callback({
-      status: 'done',
-      dbStatus: dbResult?.status || 'error',
-    });
-  });
-}
-
+// ─── STREAMLINED MESSAGE DISPATCHER ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  
+  // Rule: asynchronous handlers must execute inside a synchronous wrapper 
+  // that returns true, or directly call an immediately-invoked async function.
+  
+  if (message.action === 'initiateScrape') {
+    handleScrapeInit(message.tabId, sendResponse);
+    return true; 
+  }
+
   if (message.action === 'downloadProfileJson') {
-    const data = message.data;
-    saveCandidate(data, (saveResult) => {
-      const filename = `linkedin_${(data?.name ?? 'profile').replace(/\s+/g, '_')}_${Date.now()}.json`;
-      const content = JSON.stringify(
-        data,
-        (key, value) => {
-          if (value === null || value === undefined) return undefined;
-          if (Array.isArray(value) && value.length === 0) return undefined;
-          return value;
-        },
-        2
-      );
-      const url = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
-
-      chrome.downloads.download({ url, filename, saveAs: false }, (downloadId) => {
-        if (chrome.runtime.lastError || !downloadId) {
-          console.error('Download failed:', chrome.runtime.lastError);
-          sendResponse({ status: 'error', message: chrome.runtime.lastError?.message ?? 'download failed' });
-          return;
-        }
-        sendResponse({
-          status: 'done',
-          downloadId,
-          count: saveResult.count,
-          candidates: saveResult.candidates,
-        });
-      });
-    });
-
-    return true;
+    handleProfileDownload(message.data, sendResponse);
+    return true; 
   }
 
   if (message.action === 'getStoredCandidates') {
-    getStoredCandidates((candidates) => {
-      sendResponse({ status: 'done', candidates });
-    });
-    return true;
+    handleGetCandidates(sendResponse);
+    return true; 
   }
 });
+
+
+// ─── ASYNC ACTION HANDLERS ───────────────────────────────────────────────────
+
+async function handleScrapeInit(tabId, sendResponse) {
+  try {
+    // Await the message reply directly from content.js using Promise format
+    const contentResponse = await chrome.tabs.sendMessage(tabId, { action: 'scrapeNow' });
+    sendResponse(contentResponse);
+  } catch (error) {
+    console.error('Content script contact error:', error);
+    sendResponse({ status: 'error', message: 'Could not contact page content script.' });
+  }
+}
+
+async function handleProfileDownload(data, sendResponse) {
+  try {
+    // 1. Await database write operation
+    const saveResult = await saveCandidate(data);
+    
+    // 2. Prepare JSON backup file configurations
+    const filename = `linkedin_${(data?.name ?? 'profile').replace(/\s+/g, '_')}_${Date.now()}.json`;
+    const content = JSON.stringify(data, filterNullAndEmpty, 2);
+    const url = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
+
+    // 3. Await native browser file download 
+    const downloadId = await chrome.downloads.download({ url, filename, saveAs: false });
+
+    sendResponse({
+      status: 'done',
+      downloadId,
+      dbStatus: saveResult?.status || 'unknown'
+    });
+  } catch (error) {
+    console.error('Processing backup payload failed:', error);
+    sendResponse({ status: 'error', message: error.message });
+  }
+}
+
+async function handleGetCandidates(sendResponse) {
+  try {
+    const candidates = await getStoredCandidates();
+    sendResponse({ status: 'done', candidates });
+  } catch (error) {
+    sendResponse({ status: 'error', message: error.message });
+  }
+}
+
+
+// ─── ASYNC DATABASE OPERATIONS ───────────────────────────────────────────────
+
+async function sendToPostgreSQL(candidate) {
+  const response = await fetch(BACKEND_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(candidate),
+    mode: 'cors',
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    throw new Error(data?.message || `Server returned status code: ${response.status}`);
+  }
+
+  console.log('Sent to PostgreSQL successfully:', data);
+  return { status: 'done', dbData: data };
+}
+
+async function saveCandidate(candidate) {
+  const normalized = {
+    ...candidate,
+    url: candidate?.url || null,
+  };
+  // Wait cleanly for server transaction to finish
+  return await sendToPostgreSQL(normalized);
+}
+
+async function getStoredCandidates() {
+  const res = await fetch(BACKEND_URL, { method: 'GET' });
+  if (!res.ok) throw new Error('Could not pull candidate indices.');
+  return await res.json();
+}
+
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function filterNullAndEmpty(key, value) {
+  if (value === null || value === undefined) return undefined;
+  if (Array.isArray(value) && value.length === 0) return undefined;
+  return value;
+}

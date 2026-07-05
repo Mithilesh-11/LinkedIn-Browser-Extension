@@ -1,6 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
-  const btn        = document.getElementById('extractBtn');
+  const btn         = document.getElementById('extractBtn');
   const btnLabel    = document.getElementById('btnLabel');
   const spinner     = document.getElementById('spinner');
   const dot         = document.getElementById('dot');
@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentTab = null;
 
+  // ── Render History View ──────────────────────────────
   function renderHistory(candidates = []) {
     const safeCandidates = Array.isArray(candidates) ? candidates : [];
     historyCount.textContent = String(safeCandidates.length);
@@ -25,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     historyList.innerHTML = safeCandidates.map((candidate, idx) => {
       const name = candidate?.name || 'Unnamed';
       const headline = candidate?.headline || 'No headline';
-      const company = candidate?.company || 'No company';
       const location = candidate?.location || 'No location';
       const about = candidate?.about || 'No about';
       const followers = candidate?.followers || 'N/A';
@@ -68,9 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // Add click handlers for expanding items
+    // Click handlers for expanding cards
     document.querySelectorAll('.history-item').forEach((item) => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        // Prevent expanding the accordion if clicking the external link anchor tag
+        if (e.target.tagName === 'A') return;
+        
         item.classList.toggle('expanded');
         const toggle = item.querySelector('.history-item-toggle');
         toggle.textContent = item.classList.contains('expanded') ? '...less' : '...more';
@@ -78,89 +81,91 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function loadHistory() {
+  // ── Load History via Fetch ───────────────────────────
+  async function loadHistory() {
     const BACKEND_URL = 'http://localhost:3000/api/candidates';
-    
-    fetch(`${BACKEND_URL}?limit=5`)
-      .then((response) => response.json())
-      .then((data) => {
-        let candidates = data.candidates || [];
-        
-        // Filter out duplicates based on URL
-        const seenUrls = new Set();
-        candidates = candidates.filter((candidate) => {
-          const url = candidate?.url || null;
-          if (!url) return true; // Keep candidates without URL
-          
-          if (seenUrls.has(url)) {
-            return false; // Skip duplicate
-          }
-          seenUrls.add(url);
-          return true; // Keep first occurrence
-        });
-        
-        renderHistory(candidates);
-      })
-      .catch((error) => {
-        console.error('Failed to load candidates from database:', error);
-        historyCount.textContent = '0';
-        historyEmpty.style.display = 'block';
-        historyList.innerHTML = '';
+    try {
+      const response = await fetch(`${BACKEND_URL}?limit=5`);
+      const data = await response.json();
+      let candidates = data.candidates || [];
+      
+      // Deduplicate profiles by URL safely
+      const seenUrls = new Set();
+      candidates = candidates.filter((candidate) => {
+        const url = candidate?.url || null;
+        if (!url) return true;
+        if (seenUrls.has(url)) return false;
+        seenUrls.add(url);
+        return true;
       });
+      
+      renderHistory(candidates);
+    } catch (error) {
+      console.error('Failed to load candidates from database:', error);
+      historyCount.textContent = '0';
+      historyEmpty.style.display = 'block';
+      historyList.innerHTML = '';
+    }
   }
 
-  // ── check active tab on open ─────────────────────────
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    currentTab = tabs[0];
-    const url = currentTab?.url ?? '';
+  // ── Runtime Context Check ────────────────────────────
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  currentTab = tab;
+  const url = currentTab?.url ?? '';
 
-    if (url.includes('linkedin.com/in/')) {
-      dot.className = 'dot on';
-      const handle = url.split('linkedin.com/in/')[1]?.split('/')[0]?.split('?')[0] ?? 'profile';
-      targetLabel.textContent = `On profile: ${handle}`;
-      btn.disabled = false;
-    } else {
-      dot.className = 'dot off';
-      targetLabel.textContent = 'Open a LinkedIn profile to begin';
-      btn.disabled = true;
-    }
-  });
+  if (url.includes('linkedin.com/in/')) {
+    dot.className = 'dot on';
+    const handle = url.split('linkedin.com/in/')[1]?.split('/')[0]?.split('?')[0] ?? 'profile';
+    targetLabel.textContent = `On profile: ${handle}`;
+    btn.disabled = false;
+  } else {
+    dot.className = 'dot off';
+    targetLabel.textContent = 'Open a LinkedIn profile to begin';
+    btn.disabled = true;
+  }
 
+  // Populate view immediately on open
   loadHistory();
 
-  // ── extract button ───────────────────────────────────
-  btn.addEventListener('click', () => {
+  // ── Extraction Logic Orchestration ───────────────────
+  btn.addEventListener('click', async () => {
     if (!currentTab) return;
 
     btn.disabled = true;
     spinner.classList.add('show');
     btnLabel.textContent = 'Reading profile…';
 
-    chrome.tabs.sendMessage(currentTab.id, { action: 'scrapeNow' }, (response) => {
-      if (chrome.runtime.lastError || !response || response.status !== 'done') {
-        spinner.classList.remove('show');
-        btn.disabled = false;
-        btnLabel.textContent = 'Try again';
-        setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 2000);
-        return;
+    try {
+      // 1. Kick off scraping securely through your background architecture channel
+      const scrapeResponse = await chrome.runtime.sendMessage({ 
+        action: 'initiateScrape', 
+        tabId: currentTab.id 
+      });
+
+      if (!scrapeResponse || scrapeResponse.status !== 'done') {
+        throw new Error('Content script failed execution or timed out.');
       }
 
-      chrome.runtime.sendMessage({ action: 'downloadProfileJson', data: response.data }, (downloadResponse) => {
-          spinner.classList.remove('show');
-          btn.disabled = false;
+      // 2. Pass data downstream to handle local download & PostgreSQL synchronization
+      const downloadResponse = await chrome.runtime.sendMessage({ 
+        action: 'downloadProfileJson', 
+        data: scrapeResponse.data 
+      });
 
-          if (chrome.runtime.lastError || !downloadResponse || downloadResponse.status !== 'done') {
-            btnLabel.textContent = 'Try again';
-            setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 1200);
-            return;
-          }
+      if (!downloadResponse || downloadResponse.status !== 'done') {
+        throw new Error('Database serialization/file output script dropped.');
+      }
 
-          loadHistory();
-          btnLabel.textContent = 'Saved ✓';
-          setTimeout(() => { btnLabel.textContent = 'Extract profile data'; }, 1200);
-        }
-      );
-    });
+      // Success Updates
+      btnLabel.textContent = 'Saved ✓';
+      await loadHistory(); // Refresh history panel dynamically
+
+    } catch (err) {
+      console.error('Extraction flow broke:', err);
+      btnLabel.textContent = 'Try again';
+    } finally {
+      spinner.classList.remove('show');
+      setTimeout(() => { btnLabel.textContent = 'Extract profile data'; btn.disabled = false; }, 2000);
+    }
   });
-
 });

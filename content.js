@@ -1,15 +1,15 @@
-// ─── content.js ─────────────────────────────────────────────────────────────
-
-chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
+// ─── RUNTIME MESSAGE STREAM ───────────────────────────────────────────────
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'scrapeNow') {
     try {
+      // Scrape immediately without opening truncated panels
       const data = scrapeProfile();
       sendResponse({ status: 'done', data });
     } catch (err) {
-      console.error('Scrape error:', err);
+      console.error('Content Scraper Engine Error:', err);
       sendResponse({ status: 'error', message: err.message });
     }
-    return false;
+    return true;
   }
 });
 
