@@ -81,14 +81,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ── Load History via Fetch ───────────────────────────
+
   async function loadHistory() {
-    const BACKEND_URL = 'http://localhost:3000/api/candidates';
     try {
-      const response = await fetch(`${BACKEND_URL}?limit=5`);
-      const data = await response.json();
-      let candidates = data.candidates || [];
-      
+      const response = await chrome.runtime.sendMessage({ action: 'getStoredCandidates' });
+
+      if (!response || response.status !== 'done') {
+        throw new Error(response?.message || 'History request failed.');
+      }
+
+    let candidates = response.candidates ?? [];
       // Deduplicate profiles by URL safely
       const seenUrls = new Set();
       candidates = candidates.filter((candidate) => {
@@ -98,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         seenUrls.add(url);
         return true;
       });
-      
+
       renderHistory(candidates);
     } catch (error) {
       console.error('Failed to load candidates from database:', error);

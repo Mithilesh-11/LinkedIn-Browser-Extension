@@ -30,12 +30,6 @@ app.post('/api/candidates', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'URL is required' });
     }
 
-    // Safely parse followers to an integer
-    let followersCount = 0;
-    if (data.followers) {
-      followersCount = parseInt(String(data.followers).replace(/[^0-9]/g, ''), 10) || 0;
-    }
-
     const values = [
       data.url,
       data.name ?? null,
@@ -46,7 +40,7 @@ app.post('/api/candidates', async (req, res) => {
       JSON.stringify(data.experience || []),
       JSON.stringify(data.education || []),
       JSON.stringify(data.skills || []),
-      followersCount,
+      data.followers ?? 0,
       JSON.stringify(data.posts || []),
       JSON.stringify(data.projects || []),
       JSON.stringify(data.certifications || []),

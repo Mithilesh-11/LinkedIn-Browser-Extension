@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 function scrapeProfile() {
-
+ 
   // ── NAME ──────────────────────────────────────────────────────────────────
   const topSection = Array.from(document.querySelectorAll('section'))[1];
   const name = topSection?.querySelector('h2')?.innerText?.trim() ?? null;
@@ -61,20 +61,20 @@ function scrapeProfile() {
 
   const expSection = document.querySelector('section[componentkey$="ExperienceTopLevelSection"]');
   const experience = Array.from(expSection?.querySelectorAll('a[tabindex="0"]') ?? [])
-  .map(link => {
+    .map(link => { 
     
     const ps = Array.from(link.querySelectorAll('p')).map(p => p.innerText.trim()).filter(Boolean);
     
     let dateRangePart = typeof ps[2] === 'string' ? ps[2] : '';
     let duration = null;
-
+     
     // 1. Split by dot to extract duration
     if (dateRangePart.includes('·')) {
       const primaryParts = dateRangePart.split('·');
       dateRangePart = primaryParts[0] ?? '';
       duration = primaryParts[1]?.trim() ?? null;
     }
-
+    
     // 2. Split by hyphen to separate dates
     const dateParts = dateRangePart
       .split('-')
@@ -82,7 +82,7 @@ function scrapeProfile() {
       .filter(Boolean);
     const startDate = dateParts[0] ?? null;
     const endDate = dateParts[1] ?? null; 
-
+   
     return {
       title:   ps[0] ?? null,
       company: ps[1] ?? null,
@@ -155,7 +155,7 @@ function scrapeProfile() {
   const profileImage = profileImageEl?.src ?? null;
 
 
-
+  // ── PROJECT  ─────────────────────────────────────────────────────────
 
  const projSection = document.querySelector('section[componentkey$="Projects"]');
  const projects = Array.from(projSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
@@ -196,19 +196,16 @@ function scrapeProfile() {
         .filter(Boolean),
     };
   }).filter(p => p.name);
+  
 
-
-
+// ── CERTIFICATION  ─────────────────────────────────────────────────────────
 
   const certSection = document.querySelector('section[componentkey$="CertificationTopLevel"]');
   const certifications = Array.from(certSection?.querySelectorAll('div[componentkey^="entity-collection-item-"]') ?? [])
   .map(item => {
     const paragraphNodes = Array.from(item.querySelectorAll('p')).filter(p => !p.closest('a'));
-    const ps = paragraphNodes
-      .map(p => p.innerText.trim())
-      .filter(Boolean);
+    const ps = paragraphNodes.map(p => p.innerText.trim()).filter(Boolean);
 
-    const dateParagraph = paragraphNodes.find(p => /Issued|Expires/i.test(p.innerText.trim()));
     const credentialParagraph = paragraphNodes.find(p => /Credential ID/i.test(p.innerText.trim()));
 
     const parts = ps[2] ? ps[2].split(" · ") : null;
@@ -217,9 +214,7 @@ function scrapeProfile() {
     // 3. Clean up the "Expires " string from the second part (if it exists)
     const endDate = parts && parts[1] ? parts[1].replace("Expires ", "").trim() : null;
 
-    const actualId = credentialParagraph
-      ? credentialParagraph.innerText.replace(/Credential ID\s*/i, '').trim()
-      : null;
+    const actualId = credentialParagraph ? credentialParagraph.innerText.replace(/Credential ID\s*/i, '').trim() : null;
 
     return {
       title: ps[0] ?? null,
@@ -232,6 +227,7 @@ function scrapeProfile() {
   }).filter(c => c.title);
 
 
+// ── INTERESTS  ─────────────────────────────────────────────────────────
   const normalizeInterestFollowers = (value) => {
     if (value == null) return null;
     const match = String(value).replace(/,/g, '').match(/\d+/);
@@ -261,27 +257,26 @@ const interests = Array.from(interestsSection?.querySelectorAll('a[tabindex="0"]
   }).filter(i => i.name);
 
 
+// ── RECOMMENDATIONS  ─────────────────────────────────
 
+const recSection = document.querySelector('section[componentkey$="RecommendationsTopLevel"]');
 
-  const recSection = document.querySelector('section[componentkey$="RecommendationsTopLevel"]');
+const recommendations = Array.from(recSection?.querySelectorAll('a[href*="linkedin.com/in/"]') ?? [])
+  .map(link => {
+    const container = link.closest('div[componentkey]') ?? link;
+    const ps = Array.from(container.querySelectorAll('p'));
 
-const recommendations = Array.from(
-  recSection?.querySelectorAll('a[href*="linkedin.com/in/"]') ?? []
-).map(link => {
-  const container = link.closest('div[componentkey]') ?? link;
-  const ps = Array.from(container.querySelectorAll('p'));
+    const nameSpan = ps[0]?.querySelector('span');
+    const name = nameSpan?.childNodes[0]?.textContent?.trim() ?? null;
 
-  const nameSpan = ps[0]?.querySelector('span');
-  const name = nameSpan?.childNodes[0]?.textContent?.trim() ?? null;
-
-  return {
-    name,
-    headline: ps[2]?.innerText?.trim() ?? null,
-    dateAndRelationship: ps[3]?.innerText?.trim() ?? null,
-    text: container.querySelector('[data-testid="expandable-text-box"]')
-      ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
-  };
-}).filter(r => r.name);
+    return {
+      name,
+      headline: ps[2]?.innerText?.trim() ?? null,
+      dateAndRelationship: ps[3]?.innerText?.trim() ?? null,
+      text: container.querySelector('[data-testid="expandable-text-box"]')
+        ?.innerText?.trim()?.replace(/…\s*more\s*$/i, '') ?? null,
+    };
+  }).filter(r => r.name);
 
 
   return {

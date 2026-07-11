@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LinkedIn Scraper",
   "version": "1.0",
-  "permissions": ["activeTab", "tabs", "downloads"],
+  "permissions": ["activeTab", "tabs", "downloads", "scripting"],
   "host_permissions": ["https://www.linkedin.com/*", "http://localhost:3000/*"],
   "background": {
     "service_worker": "background.js"

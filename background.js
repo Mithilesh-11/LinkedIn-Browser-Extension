@@ -101,9 +101,15 @@ async function saveCandidate(candidate) {
 }
 
 async function getStoredCandidates() {
-  const res = await fetch(BACKEND_URL, { method: 'GET' });
-  if (!res.ok) throw new Error('Could not pull candidate indices.');
-  return await res.json();
+  const res = await fetch(BACKEND_URL);
+
+  if (!res.ok) {
+    throw new Error('Could not fetch candidates.');
+  }
+
+  const data = await res.json();
+
+  return data.candidates ?? [];
 }
 
 
