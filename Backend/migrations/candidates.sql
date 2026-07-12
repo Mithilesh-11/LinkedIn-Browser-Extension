@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS candidates (
+  id BIGSERIAL PRIMARY KEY,
+  url TEXT NOT NULL,
+  name TEXT DEFAULT NULL,
+  headline TEXT DEFAULT NULL,
+  company TEXT DEFAULT NULL,
+  location TEXT DEFAULT NULL,
+  about TEXT DEFAULT NULL,
+  experience JSONB DEFAULT '[]'::jsonb,
+  education JSONB DEFAULT '[]'::jsonb,
+  skills JSONB DEFAULT '[]'::jsonb,
+  followers INTEGER DEFAULT NULL,
+  posts JSONB DEFAULT '[]'::jsonb,
+  projects JSONB DEFAULT '[]'::jsonb,
+  certifications JSONB DEFAULT '[]'::jsonb,
+  interests JSONB DEFAULT '[]'::jsonb,
+  recommendations JSONB DEFAULT '[]'::jsonb,
+  "profileImage" TEXT DEFAULT NULL,
+  "scrapedAt" TIMESTAMPTZ DEFAULT NULL,
+  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT unique_candidate_url UNIQUE (url)
+);
