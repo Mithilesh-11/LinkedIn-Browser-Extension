@@ -56,7 +56,7 @@ The system follows a modular event-driven architecture built around the browser 
    - Local JSON file download.
    - Backend database persistence.
 
-### 2.2 Architecture Diagram
+### 2.2 Data Flow Diagram
 
 ```mermaid
 flowchart TD
@@ -164,21 +164,3 @@ The data flow can be summarized as:
 - Background worker coordinates the scrape and persistence steps.
 - The backend stores data in PostgreSQL.
 - The browser downloads the same data as a JSON file.
-
-## 6. Review Summary
-
-### Strengths
-- Clear separation of responsibilities between popup, content script, background worker, and backend.
-- The architecture is easy to understand and extend.
-- The project already supports both local export and remote persistence.
-- The UI provides useful feedback and a history view for previously scraped profiles.
-
-### Areas for Improvement
-- The scraper relies heavily on specific DOM selectors, which can break if LinkedIn changes its page structure.
-- More robust error handling and retry logic would improve reliability.
-- The project would benefit from tests for scraping logic and API integration.
-- A more structured logging and configuration system would make maintenance easier.
-
-## 7. Conclusion
-
-This project is a solid browser-extension-based scraper with a practical architecture for extracting and persisting LinkedIn profile data. Its modular design makes it suitable for further development, especially if the team wants to add more profile sections, better resilience, and stronger validation mechanisms.
