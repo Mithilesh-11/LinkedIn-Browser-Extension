@@ -1,14 +1,44 @@
-// ─── RUNTIME MESSAGE STREAM ───────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.action === 'scrapeNow') {
-    try {
-      // Scrape immediately without opening truncated panels
-      const data = scrapeProfile();
-      sendResponse({ status: 'done', data });
-    } catch (err) {
-      console.error('Content Scraper Engine Error:', err);
-      sendResponse({ status: 'error', message: err.message });
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function autoScroll() {
+
+    const container = document.getElementById("workspace");
+
+    if (!container) {
+        throw new Error("Workspace container not found");
     }
+
+    let lastHeight = 0;
+    while (true) {
+        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+        await delay(2000);
+        const newHeight = container.scrollHeight;
+        if (newHeight === lastHeight) {
+            break;
+        }
+        lastHeight = newHeight;
+    }
+}
+
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+
+  if (msg.action === "scrapeNow") {
+
+    (async () => {
+      try {
+        // Wait until all lazy-loaded content is available
+        await autoScroll();
+        const data = scrapeProfile();
+        sendResponse({status: "done", data});
+
+      } catch (err) {
+        console.error("Content Scraper Engine Error:", err);
+        sendResponse({status: "error",message: err.message});
+      }
+    })();
     return true;
   }
 });
