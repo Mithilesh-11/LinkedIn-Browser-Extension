@@ -243,8 +243,7 @@ button#extractBtn:disabled{ background:#b7c3e6; cursor:default; }
   padding: 2px 6px;
   border-radius: 4px;
 }
-  color: var(--ink);
-}
+
 .history-meta{
   font-size: 10.5px;
   color: var(--ink-soft);
