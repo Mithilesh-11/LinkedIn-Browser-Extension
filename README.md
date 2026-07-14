@@ -74,6 +74,21 @@ flowchart TD
     K --> M[Backend stores candidate data]
 ```
 
+### 2.3 Architecture Diagram
+
+```mermaid
+flowchart LR
+    U[User] --> P[Popup UI]
+    P --> B[Background Service Worker]
+    B --> C[Content Script]
+    C --> L[LinkedIn Profile Page]
+    B --> S[Backend API / Express]
+    S --> DB[(PostgreSQL)]
+    B --> D[Download JSON File]
+```
+
+This diagram shows the main runtime flow: the popup initiates the scrape, the content script reads the LinkedIn page, the background worker coordinates the flow, the backend stores the candidate data, and the browser downloads the JSON output.
+
 ## 3. Component Breakdown
 
 ### 3.1 Popup UI
