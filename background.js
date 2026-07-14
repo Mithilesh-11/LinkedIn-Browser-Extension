@@ -1,4 +1,6 @@
-const BACKEND_URL = 'http://localhost:3000/api/candidates';
+import { EXTENSION_CONFIG } from './config.js';
+
+const BACKEND_URL = EXTENSION_CONFIG?.backendUrl || 'http://localhost:3000/api/candidates';
 
 // ─── STREAMLINED MESSAGE DISPATCHER ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
