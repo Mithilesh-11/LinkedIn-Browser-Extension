@@ -5,9 +5,6 @@ const BACKEND_URL = EXTENSION_CONFIG?.backendUrl || 'http://localhost:3000/api/c
 // ─── STREAMLINED MESSAGE DISPATCHER ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
-  // Rule: asynchronous handlers must execute inside a synchronous wrapper 
-  // that returns true, or directly call an immediately-invoked async function.
-  
   if (message.action === 'initiateScrape') {
     handleScrapeInit(message.tabId, sendResponse);
     return true; 
