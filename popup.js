@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const skills = Array.isArray(candidate?.skills) ? candidate.skills : [];
       const dateStr = candidate?.createdAt || null;
       const date = dateStr ? new Date(dateStr).toLocaleDateString() : 'Recently';
+      const profileImage  = candidate?.profileImage || null;
 
       const skillsHtml = skills.length > 0
         ? skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <li class="history-item" data-idx="${idx}">
           <div class="history-item-header">
             <div class="history-item-basic">
+              ${profileImage ? `<img class="history-profile-image" src="${profileImage}" alt="${name}">` : ''}
               <div class="history-name">${name}</div>
               <div class="history-meta">${headline}</div>
               <div class="history-meta">${location}</div>

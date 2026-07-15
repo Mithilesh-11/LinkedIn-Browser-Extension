@@ -254,6 +254,13 @@ button#extractBtn:disabled{ background:#b7c3e6; cursor:default; }
   color: #7d879c;
   margin-top: 3px;
 }
+.history-profile-image{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+}
 
 /* ── footer ─────────────────────────────────────── */
 .foot{
