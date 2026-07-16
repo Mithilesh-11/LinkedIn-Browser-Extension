@@ -73,9 +73,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Click handlers for expanding cards
     document.querySelectorAll('.history-item').forEach((item) => {
       item.addEventListener('click', (e) => {
-        // Prevent expanding the accordion if clicking the external link anchor tag
-        if (e.target.tagName === 'A') return;
-        
         item.classList.toggle('expanded');
         const toggle = item.querySelector('.history-item-toggle');
         toggle.textContent = item.classList.contains('expanded') ? '...less' : '...more';
