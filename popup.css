@@ -158,11 +158,29 @@ button#extractBtn:disabled{ background:#b7c3e6; cursor:default; }
 .history-item-basic{
   flex: 1;
 }
+.history-item-actions{
+  display:flex;
+  align-items:center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.history-edit-btn{
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.history-edit-btn:hover{
+  background: #eef3ff;
+  border-color: var(--accent);
+}
 .history-item-toggle{
   font-size: 11px;
   color: var(--accent);
-  flex-shrink: 0;
-  margin-top: 0;
   font-weight: 600;
   cursor: pointer;
 }
@@ -244,22 +262,112 @@ button#extractBtn:disabled{ background:#b7c3e6; cursor:default; }
   border-radius: 4px;
 }
 
-.history-meta{
-  font-size: 10.5px;
-  color: var(--ink-soft);
-  margin-top: 2px;
-}
-.history-date{
-  font-size: 9.5px;
-  color: #7d879c;
-  margin-top: 3px;
-}
 .history-profile-image{
   width: 32px;
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 8px;
+}
+
+.edit-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.edit-modal.hidden{
+  display: none;
+}
+.edit-modal-backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 35, 61, 0.35);
+  backdrop-filter: blur(1px);
+}
+.edit-modal-card{
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  max-height: 85vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 14px 40px rgba(20, 35, 61, 0.2);
+}
+.edit-modal-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.edit-modal-header h3{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.edit-modal-close{
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.edit-form{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.edit-field{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.edit-field label{
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.edit-field input,
+.edit-field textarea{
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 11px;
+  color: var(--ink);
+  background: #fff;
+}
+.edit-field textarea{
+  min-height: 54px;
+  resize: vertical;
+}
+.edit-modal-actions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.edit-cancel-btn,
+.edit-save-btn{
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.edit-cancel-btn{
+  background: var(--wash);
+  color: var(--ink);
+}
+.edit-save-btn{
+  background: var(--accent);
+  color: #fff;
 }
 
 /* ── footer ─────────────────────────────────────── */

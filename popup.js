@@ -1,3 +1,5 @@
+import { initEditModal } from './edit-modal.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   const btn         = document.getElementById('extractBtn');
@@ -11,6 +13,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentTab = null;
 
+  const editModal = initEditModal({
+    onSave: async (updatedCandidate) => {
+      try {
+        const response = await chrome.runtime.sendMessage({ action: 'updateCandidate', candidate: updatedCandidate });
+        if (!response || response.status !== 'done') {
+          throw new Error(response?.message || 'Update failed.');
+        }
+        await loadHistory();
+        return true;
+      } catch (error) {
+        console.error('Failed to update candidate:', error);
+        return false;
+      }
+    },
+  });
+ 
   // ── Render History View ──────────────────────────────
   function renderHistory(candidates = []) {
     const safeCandidates = Array.isArray(candidates) ? candidates : [];
@@ -50,7 +68,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${url ? `<div class="history-url"><a href="${url}" target="_blank">View Profile</a></div>` : ''}
               <div class="history-date">${date}</div>
             </div>
-            <div class="history-item-toggle">...more</div>
+            <div class="history-item-actions">
+              <button type="button" class="history-edit-btn" data-candidate-idx="${idx}">Edit</button>
+              <div class="history-item-toggle">...more</div>
+            </div>
           </div>
           <div class="history-item-details">
             <div class="detail-row">
@@ -72,17 +93,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Click handlers for expanding cards
     document.querySelectorAll('.history-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        // Prevent expanding the accordion if clicking the external link anchor tag
-        if (e.target.tagName === 'A') return;
-        
-        item.classList.toggle('expanded');
-        const toggle = item.querySelector('.history-item-toggle');
-        toggle.textContent = item.classList.contains('expanded') ? '...less' : '...more';
-      });
+      const toggle = item.querySelector('.history-item-toggle');
+      const editButton = item.querySelector('.history-edit-btn');
+
+      if (toggle) {
+        toggle.addEventListener('click', (e) => {
+          item.classList.toggle('expanded');
+          toggle.textContent = item.classList.contains('expanded') ? '...less' : '...more';
+        });
+      }
+
+      if (editButton) {
+        editButton.addEventListener('click', (e) => {
+          const candidateIndex = Number(editButton.dataset.candidateIdx);
+          editModal.openEditModal(safeCandidates[candidateIndex]);
+        });
+      }
     });
   }
-
 
   async function loadHistory() {
     try {

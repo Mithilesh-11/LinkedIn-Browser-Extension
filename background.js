@@ -19,6 +19,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleGetCandidates(sendResponse);
     return true; 
   }
+
+  if (message.action === 'updateCandidate') {
+    handleUpdateCandidate(message.candidate, sendResponse);
+    return true;
+  }
 });
 
 
@@ -44,7 +49,7 @@ async function handleProfileDownload(data, sendResponse) {
     const filename = `linkedin_${(data?.name ?? 'profile').replace(/\s+/g, '_')}_${Date.now()}.json`;
     const content = JSON.stringify(data, filterNullAndEmpty, 2);
     const url = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
-
+ 
     // 3. Await native browser file download 
     const downloadId = await chrome.downloads.download({ url, filename, saveAs: false });
 
@@ -63,6 +68,15 @@ async function handleGetCandidates(sendResponse) {
   try {
     const candidates = await getStoredCandidates();
     sendResponse({ status: 'done', candidates });
+  } catch (error) {
+    sendResponse({ status: 'error', message: error.message });
+  }
+}
+
+async function handleUpdateCandidate(candidate, sendResponse) {
+  try {
+    const result = await saveCandidate(candidate);
+    sendResponse({ status: 'done', ...result });
   } catch (error) {
     sendResponse({ status: 'error', message: error.message });
   }
